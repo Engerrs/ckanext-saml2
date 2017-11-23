@@ -411,7 +411,10 @@ class Saml2Plugin(p.SingletonPlugin):
             new_user_username = _get_random_username_from_email(
                                             saml_info['email'][0])
             name_id = saml_info['id'][0]
+            data_dict['email'] = saml_info['email'][0]
             data_dict['name'] = new_user_username
+            if 'fullname' in saml_info:
+                data_dict['fullname'] = saml_info['fullname'][0]
             data_dict['id'] = unicode(uuid.uuid4())
             log.debug("Creating user: %s", data_dict)
             data_dict['password'] = self.make_password()

@@ -411,6 +411,11 @@ class Saml2Plugin(p.SingletonPlugin):
             new_user_username = _get_random_username_from_email(
                                             saml_info['email'][0])
             name_id = saml_info['id'][0]
+            environ = p.toolkit.request.environ
+            remote_user = environ.get('REMOTE_USER', '')
+            rmt_user_name = unserialise_nameid(remote_user).text
+            if rmt_user_name and name_id != rmt_user_name:
+                name_id = rmt_user_name
             data_dict['email'] = saml_info['email'][0]
             data_dict['name'] = new_user_username
             if 'fullname' in saml_info:
@@ -455,7 +460,8 @@ class Saml2Plugin(p.SingletonPlugin):
 
         create_orgs = p.toolkit.asbool(
             config.get('saml2.create_missing_orgs', False))
-
+        remove_user_from_orgs = p.toolkit.asbool(
+            config.get('saml2.rvm_users_from_orgs', True))
         context = {'ignore_auth': True}
         site_user = p.toolkit.get_action('get_site_user')(context, {})
         c = p.toolkit.c
@@ -503,9 +509,10 @@ class Saml2Plugin(p.SingletonPlugin):
                 p.toolkit.get_action('member_create')(
                     member_context, member_dict)
             else:
-                # delete membership
-                p.toolkit.get_action('member_delete')(
-                    member_context, member_dict)
+                if remove_user_from_orgs:
+                    # delete membership
+                    p.toolkit.get_action('member_delete')(
+                        member_context, member_dict)
 
     def update_data_dict(self, data_dict, mapping, saml_info):
         """Updates data_dict with values from saml_info according to
